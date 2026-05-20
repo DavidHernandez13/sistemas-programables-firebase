@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistemas Programables</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #eee;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitulo {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        .integrantes {
+            text-align: center;
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .card h2 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-left: 4px solid #00b4d8;
+            padding-left: 10px;
+        }
+        .estado-online {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        .estado-offline {
+            color: #ff4444;
+            font-weight: bold;
+        }
+        .sensor-valor {
+            font-size: 2em;
+            font-weight: bold;
+            color: #00b4d8;
+        }
+        .sensor-unidad {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+        .sensor-item {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        button {
+            background: #0077b6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #00b4d8;
+            transform: scale(1.02);
+        }
+        .btn-encender {
+            background: #00c853;
+        }
+        .btn-encender:hover {
+            background: #00e676;
+        }
+        .btn-apagar {
+            background: #d32f2f;
+        }
+        .btn-apagar:hover {
+            background: #ff4444;
+        }
+        .alerta-item {
+            background: rgba(255,193,7,0.2);
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .alerta-tiempo {
+            font-size: 0.7em;
+            color: #aaa;
+        }
+        .led-estado {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        .led-on {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+        .led-off {
+            background: #555;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            font-size: 0.8em;
+            color: #666;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .actualizando {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 Dashboard de Control</h1>
+        <div class="subtitulo">Sistemas Programables - Firebase Realtime Database</div>
+        <div class="integrantes">
+            Aguilar Figueroa José Miguel | Liceaga Hernández Angel Baruc | 
+            Ibarra Muñoz Jose Francisco | Zacarías Hernández Angel David
+        </div>
+
+        <div class="grid">
+            <!-- Tarjeta de Estado -->
+            <div class="card">
+                <h2>🔌 Estado del Sistema</h2>
+                <div class="sensor-item">
+                    <span>ESP32:</span>
+                    <span id="estado_esp32" class="estado-offline">⚪ Verificando...</span>
+                </div>
+                <div class="sensor-item">
+                    <span>Última conexión:</span>
+                    <span id="ultima_conexion">---</span>
+                </div>
+                <div class="sensor-item">
+                    <span>Modo:</span>
+                    <span>✅ Tiempo Real</span>
+                </div>
+            </div>
+
+            <!-- Tarjeta de Control LED -->
+            <div class="card">
+                <h2>💡 Control Remoto LED</h2>
+                <div class="sensor-item">
+                    <span>Estado actual:</span>
+                    <span>
+                        <strong id="estado_led_texto">Desconocido</strong>
+                        <span id="led_indicador" class="led-estado"></span>
+                    </span>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button id="btn_encender" class="btn-encender">🔆 ENCENDER LED</button>
+                    <button id="btn_apagar" class="btn-apagar">⛔ APAGAR LED</button>
+                </div>
+                <p style="font-size: 11px; color: #888; margin-top: 15px;">
+                    ⚡ Cambio instantáneo vía Firebase
+                </p>
+            </div>
+
+            <!-- Tarjeta de Sensores -->
+            <div class="card">
+                <h2>📊 Monitoreo de Sensores</h2>
+                <div class="sensor-item">
+                    <span>💡 Luz (LDR):</span>
+                    <span><span id="ldr_valor" class="sensor-valor">---</span> <span class="sensor-unidad">%</span></span>
+                </div>
+                <div class="sensor-item">
+                    <span>🌡️ Temperatura:</span>
+                    <span><span id="temp_valor" class="sensor-valor">---</span> <span class="sensor-unidad">°C</span></span>
+                </div>
+                <div class="sensor-item">
+                    <span>💧 Humedad:</span>
+                    <span><span id="hum_valor" class="sensor-valor">---</span> <span class="sensor-unidad">%</span></span>
+                </div>
+                <div class="sensor-item">
+                    <span>📟 LDR Raw:</span>
+                    <span><span id="ldr_raw">---</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Historial de Alertas -->
+        <div class="card">
+            <h2>⚠️ Historial de Eventos y Alertas</h2>
+            <div id="lista_alertas" style="max-height: 300px; overflow-y: auto;">
+                <p style="color: #aaa;">🔄 Cargando eventos...</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            Proyecto: Sistemas Programables | Firebase Realtime Database | ESP32
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        /* ===============================================
+        Integrantes del equipo:
+        Aguilar Figueroa José Miguel
+        Liceaga Hernández Angel Baruc
+        Ibarra Muñoz Jose Francisco
+        Zacarías Hernández Angel David
+
+        Objetivo del programa:
+        Implementar un dashboard web que se conecta a Firebase Realtime Database
+        para monitorear el sensor LDR y controlar remotamente un LED desde el ESP32.
+        =============================================== */
+
+        // ========== CONFIGURACIÓN DE FIREBASE ==========
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtdNUMAOR_SC8E8czez9s5o43raBZj0oo",
+            authDomain: "sistemas-programables-71bb0.firebaseapp.com",
+            databaseURL: "https://sistemas-programables-71bb0-default-rtdb.firebaseio.com",
+            projectId: "sistemas-programables-71bb0",
+            storageBucket: "sistemas-programables-71bb0.firebasestorage.app",
+            messagingSenderId: "197753134617",
+            appId: "1:197753134617:web:2e05be0aae7dc988269488"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ========== REFERENCIAS A LAS UBICACIONES ==========
+        const ledRef = database.ref('actuadores/led');
+        const estadoRef = database.ref('estado/ultima_conexion');
+        const onlineRef = database.ref('estado/online');
+        const ldrPorcentajeRef = database.ref('sensores/LDR/porcentaje');
+        const ldrRawRef = database.ref('sensores/LDR/raw');
+        const temperaturaRef = database.ref('sensores/DHT/temperatura');
+        const humedadRef = database.ref('sensores/DHT/humedad');
+        const eventosRef = database.ref('logs/eventos');
+
+        // ========== FUNCIONES DEL DASHBOARD ==========
+
+        // Verificar estado del ESP32
+        function verificarEstado() {
+            onlineRef.on('value', (snapshot) => {
+                const online = snapshot.val();
+                const estadoSpan = document.getElementById('estado_esp32');
+                if (online === 1) {
+                    estadoSpan.innerHTML = '🟢 Online';
+                    estadoSpan.className = 'estado-online';
+                } else {
+                    estadoSpan.innerHTML = '🔴 Offline';
+                    estadoSpan.className = 'estado-offline';
+                }
+            });
+
+            estadoRef.on('value', (snapshot) => {
+                const timestamp = snapshot.val();
+                if (timestamp) {
+                    const fecha = new Date(timestamp * 1000);
+                    document.getElementById('ultima_conexion').innerHTML = fecha.toLocaleString();
+                }
+            });
+        }
+
+        // Leer y mostrar estado del LED
+        function leerLED() {
+            ledRef.on('value', (snapshot) => {
+                const valor = snapshot.val();
+                const textoSpan = document.getElementById('estado_led_texto');
+                const indicador = document.getElementById('led_indicador');
+                
+                if (valor === 1) {
+                    textoSpan.innerHTML = 'ENCENDIDO 💡';
+                    textoSpan.style.color = '#00ff88';
+                    indicador.className = 'led-estado led-on';
+                } else if (valor === 0) {
+                    textoSpan.innerHTML = 'APAGADO ⚫';
+                    textoSpan.style.color = '#ff8888';
+                    indicador.className = 'led-estado led-off';
+                } else {
+                    textoSpan.innerHTML = 'No configurado';
+                    indicador.className = 'led-estado';
+                }
+            });
+        }
+
+        // Controlar LED desde el dashboard
+        function controlarLED(valor) {
+            ledRef.set(valor)
+                .then(() => {
+                    console.log("LED cambiado a:", valor);
+                    const eventoRef = database.ref('logs/eventos').push();
+                    eventoRef.set({
+                        tipo: "COMANDO",
+                        mensaje: `LED ${valor === 1 ? 'ENCENDIDO' : 'APAGADO'} desde Dashboard`,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                    alert("Error al controlar el LED. Revisa la consola.");
+                });
+        }
+
+        // Leer sensores y actualizar dashboard
+        function leerSensores() {
+            ldrPorcentajeRef.on('value', (snapshot) => {
+                const valor = snapshot.val();
+                if (valor !== null && valor !== undefined) {
+                    document.getElementById('ldr_valor').innerHTML = valor;
+                }
+            });
+
+            ldrRawRef.on('value', (snapshot) => {
+                const valor = snapshot.val();
+                if (valor !== null && valor !== undefined) {
+                    document.getElementById('ldr_raw').innerHTML = valor;
+                }
+            });
+
+            temperaturaRef.on('value', (snapshot) => {
+                const valor = snapshot.val();
+                if (valor !== null && valor !== undefined) {
+                    document.getElementById('temp_valor').innerHTML = valor;
+                }
+            });
+
+            humedadRef.on('value', (snapshot) => {
+                const valor = snapshot.val();
+                if (valor !== null && valor !== undefined) {
+                    document.getElementById('hum_valor').innerHTML = valor;
+                }
+            });
+        }
+
+        // Mostrar historial de eventos (últimos 10)
+        function mostrarEventos() {
+            eventosRef.limitToLast(10).on('child_added', (snapshot) => {
+                const evento = snapshot.val();
+                const fecha = new Date(evento.timestamp);
+                
+                const contenedor = document.getElementById('lista_alertas');
+                
+                if (contenedor.innerHTML === '<p style="color: #aaa;">🔄 Cargando eventos...</p>') {
+                    contenedor.innerHTML = '';
+                }
+                
+                let icono = "📌";
+                if (evento.tipo === "ALERTA") icono = "⚠️";
+                if (evento.tipo === "COMANDO") icono = "🎮";
+                if (evento.tipo === "SISTEMA") icono = "🔧";
+                
+                eventoDiv.innerHTML = `
+                    <div>${icono} <strong>${evento.tipo}</strong>: ${evento.mensaje}</div>
+                    <div class="alerta-tiempo">📅 ${fecha.toLocaleString()}</div>
+                `;
+                
+                contenedor.insertBefore(eventoDiv, contenedor.firstChild);
+                
+                while (contenedor.children.length > 10) {
+                    contenedor.removeChild(contenedor.lastChild);
+                }
+            });
+        }
+
+        // ========== INICIALIZAR DASHBOARD ==========
+        console.log("Dashboard de Sistemas Programables iniciado");
+        
+        document.getElementById('btn_encender').onclick = () => controlarLED(1);
+        document.getElementById('btn_apagar').onclick = () => controlarLED(0);
+        
+        verificarEstado();
+        leerLED();
+        leerSensores();
+        mostrarEventos();
+        
+        const eventoInicio = database.ref('logs/eventos').push();
+        eventoInicio.set({
+            tipo: "DASHBOARD",
+            mensaje: "Dashboard web abierto",
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        
+        console.log("✅ Dashboard listo - Escuchando cambios en tiempo real");
+    </script>
+</body>
+</html>
